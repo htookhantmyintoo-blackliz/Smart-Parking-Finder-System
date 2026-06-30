@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Parking Finder System — Sprint 1</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar__brand">
+      <span class="topbar__mark" aria-hidden="true"></span>
+      <div>
+        <p class="topbar__title">Smart Parking Finder</p>
+        <p class="topbar__subtitle">Real-time spaces, sorted by distance</p>
+      </div>
+    </div>
+
+    <button id="findBestBtn" class="find-btn find-btn--desktop" type="button">
+      <span class="find-btn__pulse" aria-hidden="true"></span>
+      <span class="find-btn__label">Find Best Parking</span>
+    </button>
+
+    <button id="adminToggle" class="admin-toggle" type="button" aria-expanded="false" aria-controls="adminPanel">
+      Admin
+    </button>
+  </header>
+
+  <main class="layout">
+
+    <section class="status-line" aria-live="polite">
+      <span id="locationStatus" class="status-line__pill">Locating you&hellip;</span>
+      <span id="lotCount" class="status-line__count">6 areas registered</span>
+    </section>
+
+    <section class="dashboard">
+      <div id="parkingGrid" class="parking-grid">
+        
+        <article class="parking-card" data-status="available">
+          <header class="parking-card__header">
+            <h3 class="parking-card__name">Trinity Street Car Park</h3>
+            <span class="badge badge--available">Available</span>
+          </header>
+          <dl class="parking-card__stats">
+            <div>
+              <dt>Available</dt>
+              <dd class="mono">54<span class="muted"> / 120</span></dd>
+            </div>
+            <div>
+              <dt>Distance</dt>
+              <dd class="mono">—</dd>
+            </div>
+          </dl>
+          <div class="parking-card__bar" aria-hidden="true">
+            <span style="width: 45%"></span>
+          </div>
+        </article>
+
+        <article class="parking-card" data-status="full">
+          <header class="parking-card__header">
+            <h3 class="parking-card__name">Jervis Centre Car Park</h3>
+            <span class="badge badge--full">Full</span>
+          </header>
+          <dl class="parking-card__stats">
+            <div>
+              <dt>Available</dt>
+              <dd class="mono">0<span class="muted"> / 200</span></dd>
+            </div>
+            <div>
+              <dt>Distance</dt>
+              <dd class="mono">—</dd>
+            </div>
+          </dl>
+          <div class="parking-card__bar" aria-hidden="true">
+            <span style="width: 0%"></span>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <section id="adminPanel" class="admin-panel">
+      <h2 class="admin-panel__title">Admin &mdash; Update Available Spaces</h2>
+      <form id="adminForm" class="admin-form">
+        <label class="admin-form__field">
+          <span>Parking area</span>
+          <select id="adminLotSelect" required>
+            <option>Trinity Street Car Park</option>
+            <option>St Stephen's Green Car Park</option>
+          </select>
+        </label>
+        <label class="admin-form__field">
+          <span>Available spaces</span>
+          <input id="adminSpacesInput" type="number" min="0" required />
+        </label>
+        <button type="submit" class="admin-form__submit" disabled>Update</button>
+      </form>
+    </section>
+
+  </main>
+
+  <button id="findBestBtnMobile" class="find-btn find-btn--mobile" type="button">
+    <span class="find-btn__pulse" aria-hidden="true"></span>
+    <span class="find-btn__label">Find Best Parking</span>
+  </button>
+
+  <script src="js/data.js"></script>
+  </body>
+</html>
