@@ -1,6 +1,10 @@
 /**
- * DATA LAYER (Sprint 1 Setup)
+ * DATA LAYER
  * Fallback reference point and baseline static structures for Dublin City Centre.
+ *
+ * Unchanged since Sprint 1 — this file stands in for a future REST API call
+ * (e.g. GET /api/parking-areas). Sprint 2 consumes this data from app.js to
+ * drive the dashboard, recommendation and admin panels.
  */
 const FALLBACK_LOCATION = { lat: 53.3498, lng: -6.2603 };
 
