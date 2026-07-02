@@ -6,8 +6,18 @@
  * (e.g. GET /api/parking-areas). Sprint 2 consumes this data from app.js to
  * drive the dashboard, recommendation and admin panels.
  */
-const FALLBACK_LOCATION = { lat: 53.3498, lng: -6.2603 };
-
+/**
+ * DATA LAYER
+ * Baseline static structures for Dublin City Centre.
+ *
+ * Unchanged since Sprint 1 — this file stands in for a future REST API call
+ * (e.g. GET /api/parking-areas). app.js consumes this data, via logic.js,
+ * to drive the dashboard, recommendation and admin panels.
+ *
+ * Note: the fallback reference point used when geolocation is unavailable
+ * now lives in js/logic.js (SmartParkingLogic.FALLBACK_LOCATION), alongside
+ * the rest of the location/distance logic.
+ */
 const parkingAreas = [
   {
     id: "lot-001",
