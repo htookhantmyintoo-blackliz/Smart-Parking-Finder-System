@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Parking Finder</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght=500;600;700&family=Inter:wght=400;500;600&family=JetBrains+Mono:wght=500;600" rel="stylesheet">
+
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+
+  <style>
+    /* UI Layout Utilities */
+    .topbar__actions { display: flex; gap: 10px; }
+    .switch-link-btn { background: none; border: none; color: var(--accent); cursor: pointer; font-family: var(--font-body); font-weight: 600; font-size: 0.85rem; padding: 0; text-decoration: underline; }
+    .switch-link-btn:hover { color: #fff; }
+    .auth-status-container { background: var(--surface-raised); padding: 12px 18px; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 15px; }
+  </style>
+</head>
+<body>
+
+  <!-- Skip link -->
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <!-- Header / Topbar -->
+  <header class="topbar">
+    <div class="topbar__brand">
+      <span class="topbar__mark" aria-hidden="true"></span>
+      <div>
+        <p class="topbar__title">Smart Parking Finder</p>
+        <p class="topbar__subtitle">Real-time parking availability</p>
+      </div>
+    </div>
+
+    <div class="topbar__actions">
+      <button id="findBestBtn" class="find-btn find-btn--desktop" type="button">
+        <span class="find-btn__pulse" aria-hidden="true"></span>
+        <span class="find-btn__label">Find Best Parking</span>
+      </button>
+
+      <button id="driverNavBtn" class="admin-toggle" type="button">Driver Portal</button>
+      <button id="adminNavBtn" class="admin-toggle" type="button">Admin Panel</button>
+    </div>
+  </header>
+
+  <!-- Main content -->
+  <main class="layout" id="main">
+
+    <!-- Driver Portal -->
+    <section id="driverPortal" class="admin-panel" hidden>
+      
+      <!-- Driver Logged Out View -->
+      <div id="driverLoggedOutView">
+        
+        <!-- Driver Login Form -->
+        <div id="driverLoginSubView">
+          <h2 class="admin-panel__title">Driver Sign In</h2>
+          <form id="driverLoginForm" class="admin-form">
+            <label class="admin-form__field">
+              <span>Username</span>
+              <input id="driverLogUsername" type="text" placeholder="Enter username" required />
+            </label>
+            <label class="admin-form__field">
+              <span>Password</span>
+              <input id="driverLogPassword" type="password" placeholder="Enter password" required />
+            </label>
+            <button type="submit" class="admin-form__submit" style="opacity:1;">Sign In</button>
+          </form>
+          <p style="margin-top: 12px; font-size: 0.85rem; color: var(--text-muted);">
+            Don't have an account? <button id="toRegisterViewBtn" class="switch-link-btn" type="button">Register here</button>
+          </p>
+        </div>
+
+        <!-- Driver Register Form -->
+        <div id="driverRegisterSubView" hidden>
+          <h2 class="admin-panel__title">Driver Registration</h2>
+          <form id="driverRegisterForm" class="admin-form">
+            <label class="admin-form__field">
+              <span>Full Name</span>
+              <input id="driverRegName" type="text" placeholder="Enter your name" required />
+            </label>
+            <label class="admin-form__field">
+              <span>Username</span>
+              <input id="driverRegUsername" type="text" placeholder="Choose a username" required />
+            </label>
+            <label class="admin-form__field">
+              <span>Password</span>
+              <input id="driverRegPassword" type="password" placeholder="Create a password" required />
+            </label>
+            <button type="submit" class="admin-form__submit" style="opacity:1; background-color: var(--status-available); color: #0b0f19;">Register</button>
+          </form>
+          <p style="margin-top: 12px; font-size: 0.85rem; color: var(--text-muted);">
+            Already have an account? <button id="toLoginViewBtn" class="switch-link-btn" type="button">Sign In here</button>
+          </p>
+        </div>
+        <p id="driverAuthFeedback" class="admin-form__feedback" role="status" style="margin-top:10px;"></p>
+      </div>
+
+      <!-- Driver Logged In View -->
+      <div id="driverLoggedInView" hidden>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h2 class="admin-panel__title" style="margin: 0;">Welcome, <span id="currentDriverName" style="color:var(--status-available);">Driver</span>!</h2>
+          <button id="driverLogoutBtn" class="admin-toggle" style="border-color: var(--status-full); color: var(--status-full); padding: 4px 12px; font-size: 0.75rem;" type="button">Logout</button>
+        </div>
+        <p style="margin-top: 10px; font-size: 0.85rem; color: var(--text-muted);">You are logged in successfully.</p>
+      </div>
+    </section>
+
+    <!-- Admin Portal -->
+    <section id="adminPortal" class="admin-panel" hidden>
+      
+      <!-- Admin Login View -->
+      <div id="adminLoginView">
+        <h2 class="admin-panel__title">Admin Login</h2>
+        <form id="adminLoginForm" class="admin-form">
+          <label class="admin-form__field">
+            <span>Username</span>
+            <input id="adminUsername" type="text" placeholder="Username" required />
+          </label>
+          <label class="admin-form__field">
+            <span>Password</span>
+            <input id="adminPassword" type="password" placeholder="••••••••" required />
+          </label>
+          <button type="submit" class="admin-form__submit" style="opacity:1;">Login</button>
+        </form>
+        <p id="adminAuthFeedback" class="admin-form__feedback" role="status" style="margin-top:10px;"></p>
+      </div>
+
+      <!-- Admin Control View -->
+      <div id="adminControlView" hidden>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <h2 class="admin-panel__title" style="margin: 0;">Admin Dashboard</h2>
+          <button id="adminLogoutBtn" class="admin-toggle" style="border-color: var(--status-full); color: var(--status-full); padding: 4px 12px; font-size: 0.75rem;" type="button">Logout</button>
+        </div>
+        <form id="adminForm" class="admin-form">
+          <label class="admin-form__field">
+            <span>Select Parking Area</span>
+            <select id="adminLotSelect" required></select>
+          </label>
+          <label class="admin-form__field">
+            <span>Available Spaces</span>
+            <input id="adminSpacesInput" type="number" min="0" required />
+          </label>
+          <button type="submit" class="admin-form__submit" style="opacity:1;">Update Spaces</button>
+        </form>
+        <p id="adminFeedback" class="admin-form__feedback" role="status" style="margin-top:10px;"></p>
+      </div>
+    </section>
+
+    <!-- Status line -->
+    <section class="status-line" aria-live="polite">
+      <span id="locationStatus" class="status-line__pill">Locating...</span>
+      <span id="lotCount" class="status-line__count"></span>
+    </section>
+
+    <!-- Recommendation panel -->
+    <section id="recommendationPanel" class="recommendation" hidden aria-live="polite"></section>
+
+    <!-- Parking grid -->
+    <section class="dashboard">
+      <h2 class="visually-hidden">Parking Overview</h2>
+      <div id="parkingGrid" class="parking-grid"></div>
+    </section>
+
+  </main>
+
+  <!-- Mobile floating button -->
+  <button id="findBestBtnMobile" class="find-btn find-btn--mobile" type="button">
+    <span class="find-btn__pulse" aria-hidden="true"></span>
+    <span class="find-btn__label">Find Best Parking</span>
+  </button>
+
+  <!-- Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
