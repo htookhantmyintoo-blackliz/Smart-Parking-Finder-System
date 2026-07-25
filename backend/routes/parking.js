@@ -32,12 +32,11 @@ router.put("/:id", requireRole("admin"), (req, res) => {
   }
 
   const value = Number(availableSpaces);
-  if (!Number.isFinite(value) || value < 0) {
-    return res.status(400).json({ error: "availableSpaces must be a non-negative number." });
+  if (!Number.isFinite(value) || value < 0 || value > area.total_spaces) {
+    return res.status(400).json({ error: "Invalid entry count value." });
   }
 
-  const clamped = Math.min(value, area.total_spaces);
-  db.prepare("UPDATE parking_areas SET available_spaces = ? WHERE id = ?").run(clamped, id);
+  db.prepare("UPDATE parking_areas SET available_spaces = ? WHERE id = ?").run(value, id);
 
   const updated = db.prepare("SELECT * FROM parking_areas WHERE id = ?").get(id);
   res.json(rowToArea(updated));

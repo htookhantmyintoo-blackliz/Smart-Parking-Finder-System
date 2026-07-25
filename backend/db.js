@@ -32,26 +32,36 @@ db.exec(`
   );
 `);
 
-// Initial parking data
+// Parking areas across Dublin 
 const seedAreas = [
+  // City centre
   { id: "lot-001", name: "Trinity Street Car Park", lat: 53.3438, lng: -6.2636, totalSpaces: 120, availableSpaces: 54 },
   { id: "lot-002", name: "St Stephen's Green Car Park", lat: 53.3381, lng: -6.2592, totalSpaces: 180, availableSpaces: 12 },
   { id: "lot-003", name: "Jervis Centre Car Park", lat: 53.3477, lng: -6.2697, totalSpaces: 200, availableSpaces: 0 },
   { id: "lot-004", name: "Drury Street Car Park", lat: 53.3417, lng: -6.2634, totalSpaces: 90, availableSpaces: 31 },
   { id: "lot-005", name: "Setanta Place Car Park", lat: 53.3406, lng: -6.2576, totalSpaces: 150, availableSpaces: 8 },
   { id: "lot-006", name: "Marlborough Street Car Park", lat: 53.3508, lng: -6.2603, totalSpaces: 110, availableSpaces: 76 },
+  //North, west, south, and coastal Dublin
+  { id: "lot-007", name: "Dublin Airport Short-Term", lat: 53.4213, lng: -6.2701, totalSpaces: 400, availableSpaces: 145 },
+  { id: "lot-008", name: "Blanchardstown Centre Car Park", lat: 53.3907, lng: -6.3855, totalSpaces: 250, availableSpaces: 60 },
+  { id: "lot-009", name: "Dundrum Town Centre Car Park", lat: 53.2903, lng: -6.2470, totalSpaces: 300, availableSpaces: 0 },
+  { id: "lot-010", name: "Tallaght The Square Car Park", lat: 53.2859, lng: -6.3728, totalSpaces: 220, availableSpaces: 18 },
+  { id: "lot-011", name: "Dun Laoghaire Harbour Car Park", lat: 53.2941, lng: -6.1364, totalSpaces: 150, availableSpaces: 90 },
+  { id: "lot-012", name: "Swords Pavilions Car Park", lat: 53.4597, lng: -6.2181, totalSpaces: 280, availableSpaces: 112 },
 ];
 
-const countRow = db.prepare("SELECT COUNT(*) AS c FROM parking_areas").get();
-if (countRow.c === 0) {
-  const insert = db.prepare(`
-    INSERT INTO parking_areas (id, name, lat, lng, total_spaces, available_spaces)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `);
-  for (const a of seedAreas) {
-    insert.run(a.id, a.name, a.lat, a.lng, a.totalSpaces, a.availableSpaces);
-  }
-  console.log(`Seeded ${seedAreas.length} parking areas.`);
+// Insert any seed areas 
+const insertArea = db.prepare(`
+  INSERT OR IGNORE INTO parking_areas (id, name, lat, lng, total_spaces, available_spaces)
+  VALUES (?, ?, ?, ?, ?, ?)
+`);
+let insertedCount = 0;
+for (const a of seedAreas) {
+  const result = insertArea.run(a.id, a.name, a.lat, a.lng, a.totalSpaces, a.availableSpaces);
+  if (result.changes > 0) insertedCount++;
+}
+if (insertedCount > 0) {
+  console.log(`Seeded ${insertedCount} new parking area(s).`);
 }
 
 // Seed default admin
