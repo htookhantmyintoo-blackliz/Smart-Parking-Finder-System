@@ -7,12 +7,32 @@ const { JWT_SECRET } = require("../middleware/auth");
 const router = express.Router();
 const TOKEN_TTL = "8h";
 
+// Password rule: at least 8 characters, with at least one letter and one number.
+// Rejects things like "123" or "password" on their own.
+function validatePassword(password) {
+  if (!password || password.length < 8) {
+    return "Password must be at least 8 characters long.";
+  }
+  if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+    return "Password must include at least one letter and one number.";
+  }
+  return null;
+}
+
 // Driver registration
 router.post("/driver/register", (req, res) => {
   const { name, username, password } = req.body || {};
 
   if (!name || !username || !password) {
     return res.status(400).json({ error: "Name, username and password are required." });
+  }
+  if (username.trim().length < 3) {
+    return res.status(400).json({ error: "Username must be at least 3 characters long." });
+  }
+
+  const passwordError = validatePassword(password);
+  if (passwordError) {
+    return res.status(400).json({ error: passwordError });
   }
 
   const existing = db.prepare("SELECT id FROM drivers WHERE username = ?").get(username);
