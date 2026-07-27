@@ -20,9 +20,16 @@ app.use("/api/parking-areas", parkingRoutes);
 // Health check
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
-// Serve frontend
+// Serve frontend static files
 const FRONTEND_DIR = path.join(__dirname, "..", "frontend");
 app.use(express.static(FRONTEND_DIR));
+
+// Admin Page Route
+app.get("/admin", (req, res) => {
+  res.sendFile(path.join(FRONTEND_DIR, "admin.html"));
+});
+
+// SPA/Client Fallback Route
 app.use((req, res, next) => {
   if (req.method !== "GET" || req.path.startsWith("/api/")) return next();
   res.sendFile(path.join(FRONTEND_DIR, "index.html"));
