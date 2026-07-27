@@ -3,7 +3,7 @@
 
   const API_BASE = "https://smart-parking-finder-system-tlzt.onrender.com/api";
   const FALLBACK_LOCATION = { lat: 53.349805, lng: -6.26031 }; // Dublin City Centre
-  const POLL_INTERVAL_MS = 15000; // 15 seconds
+  const POLL_INTERVAL_MS = 15000; 
 
   let parkingAreas = [];
   let userLocation = null;
@@ -59,22 +59,41 @@
 
   function haversineDistanceKm(a, b) {
     if (!a || !b) return null;
+    const lat1Val = Number(a.lat);
+    const lng1Val = Number(a.lng);
+    const lat2Val = Number(a.lat ?? b.lat);
+    const lng2Val = Number(a.lng ?? b.lng);
+
+    if (isNaN(lat1Val) || isNaN(lng1Val) || isNaN(lat2Val) || isNaN(lng2Val)) {
+      return null;
+    }
+
     const toRad = (deg) => (deg * Math.PI) / 180;
     const R = 6371;
-    const dLat = toRad(b.lat - a.lat);
-    const dLng = toRad(b.lng - a.lng);
-    const lat1 = toRad(a.lat);
-    const lat2 = toRad(b.lat);
-    const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+    const dLat = toRad(Number(b.lat) - lat1Val);
+    const dLng = toRad(Number(b.lng) - lng1Val);
+    const rLat1 = toRad(lat1Val);
+    const rLat2 = toRad(Number(b.lat));
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(rLat1) * Math.cos(rLat2) * Math.sin(dLng / 2) ** 2;
     return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
   }
 
   async function resolveUserLocation() {
     return new Promise((resolve) => {
-      if (!("geolocation" in navigator)) { usingFallback = true; resolve(FALLBACK_LOCATION); return; }
+      if (!("geolocation" in navigator)) { 
+        usingFallback = true; 
+        resolve(FALLBACK_LOCATION); 
+        return; 
+      }
       navigator.geolocation.getCurrentPosition(
-        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => { usingFallback = true; resolve(FALLBACK_LOCATION); },
+        (pos) => {
+          usingFallback = false;
+          resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        },
+        () => { 
+          usingFallback = true; 
+          resolve(FALLBACK_LOCATION); 
+        },
         { enableHighAccuracy: true, timeout: 6000 }
       );
     });
@@ -87,12 +106,12 @@
   }
 
   function withComputedFields(areas) {
-    const currentLocation = userLocation || FALLBACK_LOCATION;
+    const activeLocation = userLocation || FALLBACK_LOCATION;
 
     return areas
       .map((area) => ({
         ...area,
-        distanceKm: currentLocation ? haversineDistanceKm(currentLocation, area.coordinates) : null,
+        distanceKm: area.coordinates ? haversineDistanceKm(activeLocation, area.coordinates) : null,
         status: getStatus(area),
       }))
       .sort((a, b) => {
@@ -103,17 +122,19 @@
       });
   }
 
-
   async function loadParkingAreas() {
     try {
       const rawAreas = await apiFetch("/parking-areas");
-      // Map DB fields lat/lng to coordinates object
-      parkingAreas = rawAreas.map((a) => ({
-        ...a,
-        totalSpaces: a.totalSpaces ?? a.total_spaces,
-        availableSpaces: a.availableSpaces ?? a.available_spaces,
-        coordinates: { lat: a.lat, lng: a.lng }
-      }));
+      parkingAreas = rawAreas.map((a) => {
+        const lat = Number(a.lat ?? a.latitude);
+        const lng = Number(a.lng ?? a.longitude);
+        return {
+          ...a,
+          totalSpaces: Number(a.totalSpaces ?? a.total_spaces ?? 0),
+          availableSpaces: Number(a.availableSpaces ?? a.available_spaces ?? 0),
+          coordinates: (!isNaN(lat) && !isNaN(lng)) ? { lat, lng } : null
+        };
+      });
     } catch (err) {
       console.error("Failed to load parking areas:", err);
       if (lotCount) lotCount.textContent = "Could not reach the server. Is the backend running?";
@@ -312,15 +333,20 @@
 
   async function init() {
     renderLoadingSkeleton();
-    await loadParkingAreas();
-    renderDashboard();
+    
+    const [_, loc] = await Promise.all([
+      loadParkingAreas(),
+      resolveUserLocation()
+    ]);
 
-    userLocation = await resolveUserLocation();
+    userLocation = loc;
+
     if (locationStatus) {
       locationStatus.textContent = usingFallback
         ? "Using central reference point (location unavailable)"
         : "Connected to live location";
     }
+
     renderDashboard();
 
     if (driverToken && driverName) showDriverLoggedIn(driverName);
