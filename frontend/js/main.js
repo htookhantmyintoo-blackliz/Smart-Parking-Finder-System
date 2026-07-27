@@ -126,8 +126,8 @@
     try {
       const rawAreas = await apiFetch("/parking-areas");
       parkingAreas = rawAreas.map((a) => {
-        const lat = Number(a.lat ?? a.latitude);
-        const lng = Number(a.lng ?? a.longitude);
+        const lat = Number(a.coordinates?.lat ?? a.lat ?? a.latitude);
+        const lng = Number(a.coordinates?.lng ?? a.lng ?? a.longitude);
         return {
           ...a,
           totalSpaces: Number(a.totalSpaces ?? a.total_spaces ?? 0),
