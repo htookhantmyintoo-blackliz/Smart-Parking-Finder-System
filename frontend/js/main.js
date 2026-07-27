@@ -1,7 +1,8 @@
 (() => {
   "use strict";
 
-  const API_BASE = "https://smart-parking-finder-system-a2lq.onrender.com";
+  const API_BASE = "https://smart-parking-finder-system-a2lq.onrender.com/api";
+
   let parkingAreas = [];
   let userLocation = null;
   let usingFallback = false;
