@@ -1,6 +1,7 @@
 (() => {
   "use strict";
 
+  const API_BASE = "https://smart-parking-finder-system-a2lq.onrender.com";
   let parkingAreas = [];
   let userLocation = null;
   let usingFallback = false;
@@ -45,7 +46,7 @@
       });
     } catch (networkErr) {
       throw new Error(
-        "Can't reach the server. Make sure the backend is running (npm start) and you're viewing this page at http://localhost:3000 — not by opening the file directly."
+        "Can't reach the server. Make sure the backend is live and active on Render."
       );
     }
     const data = await res.json().catch(() => ({}));
