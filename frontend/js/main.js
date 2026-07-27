@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const API_BASE = "https://smart-parking-finder-system-a2lq.onrender.com/api";
+  const API_BASE = "https://smart-parking-finder-system-tlzt.onrender.com/api";
 
   let parkingAreas = [];
   let userLocation = null;
