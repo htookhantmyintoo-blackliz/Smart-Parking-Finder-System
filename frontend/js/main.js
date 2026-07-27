@@ -87,10 +87,12 @@
   }
 
   function withComputedFields(areas) {
+    const currentLocation = userLocation || FALLBACK_LOCATION;
+
     return areas
       .map((area) => ({
         ...area,
-        distanceKm: userLocation ? haversineDistanceKm(userLocation, area.coordinates) : null,
+        distanceKm: currentLocation ? haversineDistanceKm(currentLocation, area.coordinates) : null,
         status: getStatus(area),
       }))
       .sort((a, b) => {
@@ -100,6 +102,7 @@
         return b.availableSpaces - a.availableSpaces;
       });
   }
+
 
   async function loadParkingAreas() {
     try {
