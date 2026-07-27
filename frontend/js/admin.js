@@ -16,7 +16,7 @@
   const adminLogoutBtn = document.getElementById("adminLogoutBtn");
   const adminOverviewBody = document.getElementById("adminOverviewBody");
 
-    async function apiFetch(path, options = {}) {
+  async function apiFetch(path, options = {}) {
     let res;
     try {
       res = await fetch(`${API_BASE}${path}`, {
@@ -35,6 +35,7 @@
   }
 
   function renderOverview() {
+    if (!adminOverviewBody) return;
     adminOverviewBody.innerHTML = parkingAreas
       .map(
         (a) => `
@@ -48,13 +49,13 @@
   }
 
   function populateAdminSelect() {
+    if (!adminLotSelect) return;
     adminLotSelect.innerHTML = parkingAreas.map((a) => `<option value="${a.id}">${a.name}</option>`).join("");
     syncSpacesInputMax();
   }
 
-  // Keeps the "Available spaces" input capped to the selected car park's
-  // total capacity, so the browser itself blocks out-of-range values.
   function syncSpacesInputMax() {
+    if (!adminLotSelect || !adminSpacesInput) return;
     const area = parkingAreas.find((a) => a.id === adminLotSelect.value);
     if (area) adminSpacesInput.max = area.totalSpaces;
   }
@@ -66,12 +67,12 @@
   }
 
   function showLoggedIn() {
-    adminLoginView.hidden = true;
-    adminControlView.hidden = false;
+    if (adminLoginView) adminLoginView.hidden = true;
+    if (adminControlView) adminControlView.hidden = false;
   }
   function showLoggedOut() {
-    adminControlView.hidden = true;
-    adminLoginView.hidden = false;
+    if (adminControlView) adminControlView.hidden = true;
+    if (adminLoginView) adminLoginView.hidden = false;
   }
 
   async function handleAdminLogin(e) {
@@ -127,15 +128,17 @@
   }
 
   async function init() {
-    adminLoginForm.addEventListener("submit", handleAdminLogin);
-    adminForm.addEventListener("submit", handleAdminSubmit);
-    adminLotSelect.addEventListener("change", syncSpacesInputMax);
-    adminLogoutBtn.addEventListener("click", () => {
-      adminToken = null;
-      localStorage.removeItem("adminToken");
-      adminFeedback.textContent = "";
-      showLoggedOut();
-    });
+    if (adminLoginForm) adminLoginForm.addEventListener("submit", handleAdminLogin);
+    if (adminForm) adminForm.addEventListener("submit", handleAdminSubmit);
+    if (adminLotSelect) adminLotSelect.addEventListener("change", syncSpacesInputMax);
+    if (adminLogoutBtn) {
+      adminLogoutBtn.addEventListener("click", () => {
+        adminToken = null;
+        localStorage.removeItem("adminToken");
+        if (adminFeedback) adminFeedback.textContent = "";
+        showLoggedOut();
+      });
+    }
 
     if (adminToken) {
       try {
