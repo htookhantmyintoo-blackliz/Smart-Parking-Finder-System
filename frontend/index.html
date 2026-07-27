@@ -3,179 +3,137 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Smart Parking Finder</title>
-
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght=500;600;700&family=Inter:wght=400;500;600&family=JetBrains+Mono:wght=500;600" rel="stylesheet">
-
-  <!-- Main Stylesheet -->
-  <link rel="stylesheet" href="css/style.css">
-
-  <style>
-    /* UI Layout Utilities */
-    .topbar__actions { display: flex; gap: 10px; }
-    .switch-link-btn { background: none; border: none; color: var(--accent); cursor: pointer; font-family: var(--font-body); font-weight: 600; font-size: 0.85rem; padding: 0; text-decoration: underline; }
-    .switch-link-btn:hover { color: #fff; }
-    .auth-status-container { background: var(--surface-raised); padding: 12px 18px; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 15px; }
-  </style>
+  <meta name="description" content="Real-time car park availability across Dublin, with distance-based recommendations." />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <title>Smart Parking Finder — Live Parking in Dublin</title>
+  <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 
-  <!-- Skip link -->
   <a class="skip-link" href="#main">Skip to content</a>
 
-  <!-- Header / Topbar -->
   <header class="topbar">
-    <div class="topbar__brand">
-      <span class="topbar__mark" aria-hidden="true"></span>
-      <div>
-        <p class="topbar__title">Smart Parking Finder</p>
-        <p class="topbar__subtitle">Real-time parking availability</p>
-      </div>
+    <div class="brand">
+      <span class="brand__sign" aria-hidden="true">P</span>
+      <span class="brand__name">Smart Parking Finder</span>
     </div>
-
-    <div class="topbar__actions">
-      <button id="findBestBtn" class="find-btn find-btn--desktop" type="button">
-        <span class="find-btn__pulse" aria-hidden="true"></span>
-        <span class="find-btn__label">Find Best Parking</span>
-      </button>
-
-      <button id="driverNavBtn" class="admin-toggle" type="button">Driver Portal</button>
-      <button id="adminNavBtn" class="admin-toggle" type="button">Admin Panel</button>
+    <div class="topbar__right">
+      <button id="driverNavBtn" class="btn btn--ghost" type="button">Driver Sign In</button>
     </div>
   </header>
 
-  <!-- Main content -->
-  <main class="layout" id="main">
+  <main class="page" id="main">
 
-    <!-- Driver Portal -->
-    <section id="driverPortal" class="admin-panel" hidden>
-      
-      <!-- Driver Logged Out View -->
-      <div id="driverLoggedOutView">
-        
-        <!-- Driver Login Form -->
-        <div id="driverLoginSubView">
-          <h2 class="admin-panel__title">Driver Sign In</h2>
-          <form id="driverLoginForm" class="admin-form">
-            <label class="admin-form__field">
-              <span>Username</span>
-              <input id="driverLogUsername" type="text" placeholder="Enter username" required />
-            </label>
-            <label class="admin-form__field">
-              <span>Password</span>
-              <input id="driverLogPassword" type="password" placeholder="Enter password" required />
-            </label>
-            <button type="submit" class="admin-form__submit" style="opacity:1;">Sign In</button>
-          </form>
-          <p style="margin-top: 12px; font-size: 0.85rem; color: var(--text-muted);">
-            Don't have an account? <button id="toRegisterViewBtn" class="switch-link-btn" type="button">Register here</button>
-          </p>
+    <section class="hero">
+      <div>
+        <p class="hero__eyebrow">Live · Dublin City Centre</p>
+        <h1>Find a spot before you circle the block.</h1>
+        <p class="hero__sub">
+          Real-time availability across 12 car parks in Dublin — from the
+          city centre out to the airport, Dundrum, and Tallaght. Browse
+          without an account; sign in only to save your name for next time.
+        </p>
+        <div class="hero__actions">
+          <button id="findBestBtn" class="btn btn--signal" type="button">Find Best Parking</button>
         </div>
-
-        <!-- Driver Register Form -->
-        <div id="driverRegisterSubView" hidden>
-          <h2 class="admin-panel__title">Driver Registration</h2>
-          <form id="driverRegisterForm" class="admin-form">
-            <label class="admin-form__field">
-              <span>Full Name</span>
-              <input id="driverRegName" type="text" placeholder="Enter your name" required />
-            </label>
-            <label class="admin-form__field">
-              <span>Username</span>
-              <input id="driverRegUsername" type="text" placeholder="Choose a username" required />
-            </label>
-            <label class="admin-form__field">
-              <span>Password</span>
-              <input id="driverRegPassword" type="password" placeholder="Create a password" required />
-            </label>
-            <button type="submit" class="admin-form__submit" style="opacity:1; background-color: var(--status-available); color: #0b0f19;">Register</button>
-          </form>
-          <p style="margin-top: 12px; font-size: 0.85rem; color: var(--text-muted);">
-            Already have an account? <button id="toLoginViewBtn" class="switch-link-btn" type="button">Sign In here</button>
-          </p>
-        </div>
-        <p id="driverAuthFeedback" class="admin-form__feedback" role="status" style="margin-top:10px;"></p>
       </div>
 
-      <!-- Driver Logged In View -->
-      <div id="driverLoggedInView" hidden>
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <h2 class="admin-panel__title" style="margin: 0;">Welcome, <span id="currentDriverName" style="color:var(--status-available);">Driver</span>!</h2>
-          <button id="driverLogoutBtn" class="admin-toggle" style="border-color: var(--status-full); color: var(--status-full); padding: 4px 12px; font-size: 0.75rem;" type="button">Logout</button>
-        </div>
-        <p style="margin-top: 10px; font-size: 0.85rem; color: var(--text-muted);">You are logged in successfully.</p>
+      <div class="board" aria-live="polite">
+        <p class="board__label">Spaces free right now</p>
+        <div class="flap-row" id="totalFlap"></div>
+        <p class="board__caption" id="locationStatus">Connecting to location service…</p>
       </div>
     </section>
 
-    <!-- Admin Portal -->
-    <section id="adminPortal" class="admin-panel" hidden>
-      
-      <!-- Admin Login View -->
-      <div id="adminLoginView">
-        <h2 class="admin-panel__title">Admin Login</h2>
-        <form id="adminLoginForm" class="admin-form">
-          <label class="admin-form__field">
-            <span>Username</span>
-            <input id="adminUsername" type="text" placeholder="Username" required />
-          </label>
-          <label class="admin-form__field">
-            <span>Password</span>
-            <input id="adminPassword" type="password" placeholder="••••••••" required />
-          </label>
-          <button type="submit" class="admin-form__submit" style="opacity:1;">Login</button>
-        </form>
-        <p id="adminAuthFeedback" class="admin-form__feedback" role="status" style="margin-top:10px;"></p>
-      </div>
-
-      <!-- Admin Control View -->
-      <div id="adminControlView" hidden>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
-          <h2 class="admin-panel__title" style="margin: 0;">Admin Dashboard</h2>
-          <button id="adminLogoutBtn" class="admin-toggle" style="border-color: var(--status-full); color: var(--status-full); padding: 4px 12px; font-size: 0.75rem;" type="button">Logout</button>
-        </div>
-        <form id="adminForm" class="admin-form">
-          <label class="admin-form__field">
-            <span>Select Parking Area</span>
-            <select id="adminLotSelect" required></select>
-          </label>
-          <label class="admin-form__field">
-            <span>Available Spaces</span>
-            <input id="adminSpacesInput" type="number" min="0" required />
-          </label>
-          <button type="submit" class="admin-form__submit" style="opacity:1;">Update Spaces</button>
-        </form>
-        <p id="adminFeedback" class="admin-form__feedback" role="status" style="margin-top:10px;"></p>
-      </div>
-    </section>
-
-    <!-- Status line -->
-    <section class="status-line" aria-live="polite">
-      <span id="locationStatus" class="status-line__pill">Locating...</span>
-      <span id="lotCount" class="status-line__count"></span>
-    </section>
-
-    <!-- Recommendation panel -->
     <section id="recommendationPanel" class="recommendation" hidden aria-live="polite"></section>
 
-    <!-- Parking grid -->
     <section class="dashboard">
-      <h2 class="visually-hidden">Parking Overview</h2>
+      <div class="dashboard__head">
+        <h2>Car parks nearby</h2>
+        <p id="lotCount"></p>
+      </div>
+      <div class="search-row">
+        <svg class="search-row__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input id="searchInput" type="search" placeholder="Search by name or area…" aria-label="Search car parks" />
+      </div>
       <div id="parkingGrid" class="parking-grid"></div>
+      <p id="noResults" class="no-results" hidden>No car parks match "<span id="noResultsQuery"></span>".</p>
     </section>
 
   </main>
 
-  <!-- Mobile floating button -->
-  <button id="findBestBtnMobile" class="find-btn find-btn--mobile" type="button">
-    <span class="find-btn__pulse" aria-hidden="true"></span>
-    <span class="find-btn__label">Find Best Parking</span>
-  </button>
+  <button id="findBestBtnMobile" class="btn btn--signal fab" type="button">Find Best Parking</button>
 
-  <!-- Scripts -->
+  <!-- Driver portal — slides in, never blocks browsing as a guest -->
+  <div id="drawerOverlay" class="drawer-overlay" hidden></div>
+  <aside id="driverPortal" class="drawer" hidden aria-label="Driver account">
+    <div class="drawer__head">
+      <h3 id="driverDrawerTitle">Driver Sign In</h3>
+      <button id="driverDrawerClose" class="drawer__close" type="button" aria-label="Close">&times;</button>
+    </div>
+
+    <div id="driverLoggedOutView">
+      <div id="driverLoginSubView">
+        <form id="driverLoginForm" class="auth-form">
+          <div class="field">
+            <label for="driverLogUsername">Username</label>
+            <input id="driverLogUsername" type="text" required placeholder="Enter username" autocomplete="username" />
+          </div>
+          <div class="field">
+            <label for="driverLogPassword">Password</label>
+            <input id="driverLogPassword" type="password" required placeholder="••••••••" autocomplete="current-password" />
+          </div>
+          <button type="submit" class="btn btn--block">Sign In</button>
+        </form>
+        <p class="auth-switch">New here? <button type="button" id="toRegisterViewBtn" class="link-btn">Create an account</button></p>
+      </div>
+
+      <div id="driverRegisterSubView" hidden>
+        <form id="driverRegisterForm" class="auth-form">
+          <div class="field">
+            <label for="driverRegName">Full name</label>
+            <input id="driverRegName" type="text" required placeholder="Aoife Byrne" autocomplete="name" />
+          </div>
+          <div class="field">
+            <label for="driverRegUsername">Username</label>
+            <input id="driverRegUsername" type="text" required placeholder="Choose a username" autocomplete="username" />
+          </div>
+          <div class="field">
+            <label for="driverRegPassword">Password</label>
+            <input id="driverRegPassword" type="password" required minlength="8"
+                   pattern="(?=.*[A-Za-z])(?=.*\d).{8,}"
+                   placeholder="Create a password" autocomplete="new-password" />
+            <p class="field__hint">At least 8 characters, with a letter and a number.</p>
+          </div>
+          <button type="submit" class="btn btn--block">Create Account</button>
+        </form>
+        <p class="auth-switch">Already registered? <button type="button" id="toLoginViewBtn" class="link-btn">Sign in</button></p>
+      </div>
+
+      <p id="driverAuthFeedback" class="feedback" role="status"></p>
+
+      <p class="guest-note">
+        Browsing and getting a recommendation never require an account.
+        Sign in only to save your name for next time.
+      </p>
+    </div>
+
+    <div id="driverLoggedInView" hidden>
+      <div class="welcome-row">
+        <p>Signed in as <strong id="currentDriverName">Driver</strong></p>
+        <button id="driverLogoutBtn" class="btn btn--ghost btn--sm" type="button">Sign Out</button>
+      </div>
+    </div>
+  </aside>
+
+  <footer class="site-footer">
+    Smart Parking Finder · Dublin
+  </footer>
+
   <script src="js/data.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/main.js"></script>
 </body>
 </html>
