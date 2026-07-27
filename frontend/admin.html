@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Parking Finder — Admin</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="admin-shell">
+
+  <header class="admin-topbar">
+    <div class="brand">
+      <span class="brand__sign" aria-hidden="true">P</span>
+      <span class="brand__name">Smart Parking Finder <span class="brand__admin-tag">Admin</span></span>
+    </div>
+    <a class="admin-topbar__back" href="index.html">← Back to site</a>
+  </header>
+
+  <main class="admin-main">
+
+    <div id="adminLoginView" class="admin-card">
+      <div class="admin-card__panel">
+        <h2>Admin sign in</h2>
+        <p class="admin-card__sub">Restricted to parking area staff.</p>
+        <form id="adminLoginForm" class="auth-form">
+          <div class="field">
+            <label for="adminUsername">Username</label>
+            <input id="adminUsername" type="text" required placeholder="Username" autocomplete="username" />
+          </div>
+          <div class="field">
+            <label for="adminPassword">Password</label>
+            <input id="adminPassword" type="password" required placeholder="••••••••" autocomplete="current-password" />
+          </div>
+          <button type="submit" class="btn btn--block">Sign In</button>
+        </form>
+        <p id="adminAuthFeedback" class="feedback" role="status"></p>
+      </div>
+    </div>
+
+    <div id="adminControlView" class="admin-card admin-wide" hidden>
+      <div class="admin-card__panel">
+        <div class="admin-toprow">
+          <span class="admin-badge">● Authenticated</span>
+          <button id="adminLogoutBtn" class="btn btn--ghost btn--sm" type="button">Log out</button>
+        </div>
+
+        <h2>Update space counts</h2>
+        <p class="admin-card__sub">Changes save immediately and appear on the live dashboard.</p>
+
+        <table class="mini-table" id="adminOverviewTable" aria-label="Current availability">
+          <thead>
+            <tr><th>Car park</th><th>Available</th><th>Total</th></tr>
+          </thead>
+          <tbody id="adminOverviewBody"></tbody>
+        </table>
+
+        <form id="adminForm" class="auth-form">
+          <div class="field">
+            <label for="adminLotSelect">Car park</label>
+            <select id="adminLotSelect" required></select>
+          </div>
+          <div class="field">
+            <label for="adminSpacesInput">Available spaces</label>
+            <input id="adminSpacesInput" type="number" min="0" required />
+          </div>
+          <button type="submit" class="btn btn--block">Update Availability</button>
+        </form>
+        <p id="adminFeedback" class="feedback" role="status"></p>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="js/data.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
