@@ -49,14 +49,14 @@ router.post("/driver/register", (req, res) => {
     .prepare("SELECT username, email FROM drivers WHERE LOWER(username) = LOWER(?) OR LOWER(email) = LOWER(?)")
     .get(cleanUsername, cleanEmail);
 
-  if (existingUser) {
-    if (existingUser.username.toLowerCase() === cleanUsername.toLowerCase()) {
-      return res.status(409).json({ error: "Username is already taken." });
+    if (existingUser) {
+      if (existingUser.username?.toLowerCase() === cleanUsername.toLowerCase()) {
+        return res.status(409).json({ error: "Username is already taken." });
+      }
+      if (existingUser.email?.toLowerCase() === cleanEmail) {
+        return res.status(409).json({ error: "Email address is already registered." });
+      }
     }
-    if (existingUser.email && existingUser.email.toLowerCase() === cleanEmail) {
-      return res.status(409).json({ error: "Email address is already registered." });
-    }
-  }
 
   // Hash password and insert user safely with try-catch
   try {
