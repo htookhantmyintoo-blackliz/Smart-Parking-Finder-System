@@ -13,6 +13,7 @@
   let driverToken = localStorage.getItem("driverToken") || null;
   let driverName = localStorage.getItem("driverName") || null;
 
+  // DOM Elements
   const grid = document.getElementById("parkingGrid");
   const searchInput = document.getElementById("searchInput");
   const noResults = document.getElementById("noResults");
@@ -40,6 +41,7 @@
   const toRegisterViewBtn = document.getElementById("toRegisterViewBtn");
   const toLoginViewBtn = document.getElementById("toLoginViewBtn");
 
+  // API Helper
   async function apiFetch(path, options = {}) {
     let res;
     try {
@@ -57,27 +59,33 @@
     return data;
   }
 
+  // Calculate distance between two lat/lng coordinates in km
   function haversineDistanceKm(a, b) {
     if (!a || !b) return null;
     const lat1Val = Number(a.lat);
     const lng1Val = Number(a.lng);
-    const lat2Val = Number(a.lat ?? b.lat);
-    const lng2Val = Number(a.lng ?? b.lng);
+    const lat2Val = Number(b.lat);
+    const lng2Val = Number(b.lng);
 
     if (isNaN(lat1Val) || isNaN(lng1Val) || isNaN(lat2Val) || isNaN(lng2Val)) {
       return null;
     }
 
     const toRad = (deg) => (deg * Math.PI) / 180;
-    const R = 6371;
-    const dLat = toRad(Number(b.lat) - lat1Val);
-    const dLng = toRad(Number(b.lng) - lng1Val);
+    const R = 6371; // Earth radius in km
+    const dLat = toRad(lat2Val - lat1Val);
+    const dLng = toRad(lng2Val - lng1Val);
     const rLat1 = toRad(lat1Val);
-    const rLat2 = toRad(Number(b.lat));
-    const h = Math.sin(dLat / 2) ** 2 + Math.cos(rLat1) * Math.cos(rLat2) * Math.sin(dLng / 2) ** 2;
+    const rLat2 = toRad(lat2Val);
+
+    const h =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(rLat1) * Math.cos(rLat2) * Math.sin(dLng / 2) ** 2;
+
     return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
   }
 
+  // Geolocation Resolution
   async function resolveUserLocation() {
     return new Promise((resolve) => {
       if (!("geolocation" in navigator)) { 
@@ -99,6 +107,7 @@
     });
   }
 
+  // Status mapping
   function getStatus(area) {
     if (!area.totalSpaces || area.availableSpaces === 0) return { key: "full", label: "Full" };
     if (area.availableSpaces / area.totalSpaces <= 0.3) return { key: "almost-full", label: "Almost Full" };
@@ -122,12 +131,13 @@
       });
   }
 
+  // Fetch parking areas from API
   async function loadParkingAreas() {
     try {
       const rawAreas = await apiFetch("/parking-areas");
       parkingAreas = rawAreas.map((a) => {
-        const lat = Number(a.coordinates?.lat ?? a.lat ?? a.latitude);
-        const lng = Number(a.coordinates?.lng ?? a.lng ?? a.longitude);
+        const lat = Number(a.lat ?? a.coordinates?.lat);
+        const lng = Number(a.lng ?? a.coordinates?.lng);
         return {
           ...a,
           totalSpaces: Number(a.totalSpaces ?? a.total_spaces ?? 0),
@@ -141,6 +151,7 @@
     }
   }
 
+  // Split-Flap Counter Renderer
   function renderFlap(total) {
     if (!totalFlap) return;
     const digits = String(total).padStart(3, "0").split("");
@@ -153,6 +164,7 @@
     lastTotalAvailable = total;
   }
 
+  // Render Dashboard Grid
   function renderDashboard() {
     if (!grid) return;
     if (parkingAreas.length === 0) {
@@ -203,6 +215,7 @@
     renderFlap(totalAvailable);
   }
 
+  // Render Loading Skeletons
   function renderLoadingSkeleton() {
     if (!grid) return;
     grid.innerHTML = Array.from({ length: 6 })
@@ -222,6 +235,7 @@
     if (lotCount) lotCount.textContent = "Loading car parks…";
   }
 
+  // Distance & Space Recommendation Algorithm
   function findBestParking() {
     const computed = withComputedFields(parkingAreas);
     const candidates = computed.filter((a) => a.availableSpaces > 0);
@@ -249,6 +263,7 @@
     recommendationPanel.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
+  // Drawer Portal Handlers
   function openDrawer() {
     if (driverPortal) driverPortal.hidden = false;
     if (drawerOverlay) drawerOverlay.hidden = false;
@@ -273,22 +288,51 @@
     if (driverNavBtn) driverNavBtn.textContent = "Driver Sign In";
   }
 
+  // Guards against double-submission (e.g. impatient re-clicks while the
+  // free Render backend is "waking up" from a cold start, which can take
+  // 30-50s). Without this, a slow-but-successful first request plus an
+  // impatient second click can look like a broken sign-up/sign-in flow.
+  let authRequestInFlight = false;
+
+  async function loginDriver(identifier, password) {
+    const data = await apiFetch("/auth/driver/login", {
+      method: "POST",
+      body: JSON.stringify({ username: identifier, email: identifier, password }),
+    });
+    driverToken = data.token;
+    driverName = data.name;
+    localStorage.setItem("driverToken", driverToken);
+    localStorage.setItem("driverName", driverName);
+    showDriverLoggedIn(driverName);
+  }
+
+  // Driver Login Submission
   async function handleDriverLogin(e) {
     e.preventDefault();
-    const username = document.getElementById("driverLogUsername").value.trim();
+    if (authRequestInFlight) return;
+    authRequestInFlight = true;
+
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    let slowNoticeTimer = null;
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Signing in…";
+    }
+    // If the backend is still asleep, let the user know instead of leaving
+    // them guessing (and clicking again).
+    slowNoticeTimer = setTimeout(() => {
+      if (driverAuthFeedback) {
+        driverAuthFeedback.dataset.tone = "info";
+        driverAuthFeedback.textContent =
+          "Still waking up the server (free hosting can take up to a minute on first use)… please wait, don't resubmit.";
+      }
+    }, 4000);
+
+    const identifier = document.getElementById("driverLogUsername").value.trim();
     const password = document.getElementById("driverLogPassword").value;
 
     try {
-      const data = await apiFetch("/auth/driver/login", {
-        method: "POST",
-        body: JSON.stringify({ username, password }),
-      });
-      driverToken = data.token;
-      driverName = data.name;
-      localStorage.setItem("driverToken", driverToken);
-      localStorage.setItem("driverName", driverName);
-
-      showDriverLoggedIn(driverName);
+      await loginDriver(identifier, password);
       if (driverLoginForm) driverLoginForm.reset();
       if (driverAuthFeedback) driverAuthFeedback.textContent = "";
       setTimeout(closeDrawer, 500);
@@ -297,40 +341,85 @@
         driverAuthFeedback.dataset.tone = "error";
         driverAuthFeedback.textContent = err.message;
       }
+    } finally {
+      clearTimeout(slowNoticeTimer);
+      authRequestInFlight = false;
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Sign In";
+      }
     }
   }
 
+  // Driver Register Submission
   async function handleDriverRegister(e) {
     e.preventDefault();
+    if (authRequestInFlight) return;
+    authRequestInFlight = true;
+
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Creating Account…";
+    }
+    const slowNoticeTimer = setTimeout(() => {
+      if (driverAuthFeedback) {
+        driverAuthFeedback.dataset.tone = "info";
+        driverAuthFeedback.textContent =
+          "Still waking up the server (free hosting can take up to a minute on first use)… please wait, don't resubmit.";
+      }
+    }, 4000);
+
     const name = document.getElementById("driverRegName").value.trim();
     const username = document.getElementById("driverRegUsername").value.trim();
+    const email = document.getElementById("driverRegEmail").value.trim();
     const password = document.getElementById("driverRegPassword").value;
 
     try {
       await apiFetch("/auth/driver/register", {
         method: "POST",
-        body: JSON.stringify({ name, username, password }),
+        body: JSON.stringify({ name, username, email, password }),
       });
 
       if (driverAuthFeedback) {
         driverAuthFeedback.dataset.tone = "success";
-        driverAuthFeedback.textContent = "Account created. Switching to sign in…";
+        driverAuthFeedback.textContent = "Account created. Signing you in…";
       }
       if (driverRegisterForm) driverRegisterForm.reset();
 
-      setTimeout(() => {
+      // Sign the new driver in immediately instead of making them retype
+      // everything into a separate Sign In form.
+      try {
+        await loginDriver(username, password);
+        if (driverAuthFeedback) driverAuthFeedback.textContent = "";
+        setTimeout(closeDrawer, 500);
+      } catch (loginErr) {
+        // Account exists but auto-login failed for some reason (e.g. the
+        // server went back to sleep mid-flow) — send them to the login
+        // form instead of leaving them stuck.
         if (driverLoginSubView) driverLoginSubView.hidden = false;
         if (driverRegisterSubView) driverRegisterSubView.hidden = true;
-        if (driverAuthFeedback) driverAuthFeedback.textContent = "";
-      }, 1400);
+        if (driverAuthFeedback) {
+          driverAuthFeedback.dataset.tone = "success";
+          driverAuthFeedback.textContent = "Account created. Please sign in below.";
+        }
+      }
     } catch (err) {
       if (driverAuthFeedback) {
         driverAuthFeedback.dataset.tone = "error";
         driverAuthFeedback.textContent = err.message;
       }
+    } finally {
+      clearTimeout(slowNoticeTimer);
+      authRequestInFlight = false;
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Create Account";
+      }
     }
   }
 
+  // Initialization
   async function init() {
     renderLoadingSkeleton();
     
@@ -368,6 +457,13 @@
     if (driverDrawerClose) driverDrawerClose.addEventListener("click", closeDrawer);
     if (drawerOverlay) drawerOverlay.addEventListener("click", closeDrawer);
 
+    // Close drawer when pressing Escape
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && driverPortal && !driverPortal.hidden) {
+        closeDrawer();
+      }
+    });
+
     if (toRegisterViewBtn) {
       toRegisterViewBtn.addEventListener("click", () => {
         if (driverLoginSubView) driverLoginSubView.hidden = true;
@@ -397,6 +493,7 @@
       });
     }
 
+    // Live background polling
     setInterval(async () => {
       await loadParkingAreas();
       renderDashboard();

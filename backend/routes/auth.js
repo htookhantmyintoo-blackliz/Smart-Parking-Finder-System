@@ -7,8 +7,10 @@ const { JWT_SECRET } = require("../middleware/auth");
 const router = express.Router();
 const TOKEN_TTL = "8h";
 
-// Password rule: at least 8 characters, with at least one letter and one number.
-// Rejects things like "123" or "password" on their own.
+// Email validation
+const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+// Password strength check
 function validatePassword(password) {
   if (!password || password.length < 8) {
     return "Password must be at least 8 characters long.";
@@ -19,15 +21,22 @@ function validatePassword(password) {
   return null;
 }
 
-// Driver registration
+// Driver Registration
 router.post("/driver/register", (req, res) => {
-  const { name, username, password } = req.body || {};
+  const { name, username, email, password } = req.body || {};
 
-  if (!name || !username || !password) {
-    return res.status(400).json({ error: "Name, username and password are required." });
+  if (!name || !username || !email || !password) {
+    return res.status(400).json({ error: "All fields (name, username, email, password) are required." });
   }
-  if (username.trim().length < 3) {
+
+  const cleanUsername = username.trim();
+  const cleanEmail = email.trim().toLowerCase();
+
+  if (cleanUsername.length < 3) {
     return res.status(400).json({ error: "Username must be at least 3 characters long." });
+  }
+  if (!validateEmail(cleanEmail)) {
+    return res.status(400).json({ error: "Please provide a valid email address." });
   }
 
   const passwordError = validatePassword(password);
@@ -35,40 +44,90 @@ router.post("/driver/register", (req, res) => {
     return res.status(400).json({ error: passwordError });
   }
 
-  const existing = db.prepare("SELECT id FROM drivers WHERE username = ?").get(username);
-  if (existing) {
-    return res.status(409).json({ error: "Username is already taken." });
+  // 1. Explicitly check both Username and Email together/separately with LOWER()
+  const existingUser = db
+    .prepare("SELECT username, email FROM drivers WHERE LOWER(username) = LOWER(?) OR LOWER(email) = LOWER(?)")
+    .get(cleanUsername, cleanEmail);
+
+  if (existingUser) {
+    if (existingUser.username.toLowerCase() === cleanUsername.toLowerCase()) {
+      return res.status(409).json({ error: "Username is already taken." });
+    }
+    if (existingUser.email && existingUser.email.toLowerCase() === cleanEmail) {
+      return res.status(409).json({ error: "Email address is already registered." });
+    }
   }
 
-  const hash = bcrypt.hashSync(password, 10);
-  db.prepare("INSERT INTO drivers (name, username, password_hash) VALUES (?, ?, ?)").run(name, username, hash);
+  // Hash password and insert user safely with try-catch
+  try {
+    const hash = bcrypt.hashSync(password, 10);
+    db.prepare("INSERT INTO drivers (name, username, email, password_hash) VALUES (?, ?, ?, ?)").run(
+      name.trim(),
+      cleanUsername,
+      cleanEmail,
+      hash
+    );
 
-  res.status(201).json({ message: "Account created successfully." });
+    return res.status(201).json({ message: "Account created successfully." });
+  } catch (err) {
+    // Catch SQLite UNIQUE constraint fail as fallback
+    if (err.message && err.message.includes("UNIQUE constraint failed")) {
+      return res.status(409).json({ error: "Username or Email is already registered." });
+    }
+    console.error("Registration error:", err);
+    return res.status(500).json({ error: "Internal server error during registration." });
+  }
 });
 
-// Driver login
+// Driver Login
 router.post("/driver/login", (req, res) => {
-  const { username, password } = req.body || {};
-  const driver = db.prepare("SELECT * FROM drivers WHERE username = ?").get(username);
+  const { username, email, password } = req.body || {};
+  const identifier = (username || email || "").trim();
 
-  if (!driver || !bcrypt.compareSync(password || "", driver.password_hash)) {
-    return res.status(401).json({ error: "Invalid username or password." });
+  if (!identifier || !password) {
+    return res.status(400).json({ error: "Username/Email and password are required." });
   }
 
-  const token = jwt.sign({ sub: driver.id, role: "driver", name: driver.name }, JWT_SECRET, { expiresIn: TOKEN_TTL });
-  res.json({ token, name: driver.name, username: driver.username });
+  const driver = db
+    .prepare("SELECT * FROM drivers WHERE LOWER(username) = LOWER(?) OR LOWER(email) = LOWER(?)")
+    .get(identifier, identifier.toLowerCase());
+
+  if (!driver || !bcrypt.compareSync(password, driver.password_hash)) {
+    return res.status(401).json({ error: "Invalid username/email or password." });
+  }
+
+  const token = jwt.sign(
+    { sub: driver.id, role: "driver", name: driver.name, email: driver.email },
+    JWT_SECRET,
+    { expiresIn: TOKEN_TTL }
+  );
+
+  res.json({ token, name: driver.name, username: driver.username, email: driver.email });
 });
 
-// Admin login 
+// Admin Login 
 router.post("/admin/login", (req, res) => {
-  const { username, password } = req.body || {};
-  const admin = db.prepare("SELECT * FROM admins WHERE username = ?").get(username);
+  const { username, email, password } = req.body || {};
+  const identifier = (username || email || "").trim();
 
-  if (!admin || !bcrypt.compareSync(password || "", admin.password_hash)) {
+  if (!identifier || !password) {
+    return res.status(400).json({ error: "Username/Email and password are required." });
+  }
+
+  const admin = db
+    .prepare("SELECT * FROM admins WHERE LOWER(username) = LOWER(?) OR LOWER(email) = LOWER(?)")
+    .get(identifier, identifier.toLowerCase());
+
+  if (!admin || !bcrypt.compareSync(password, admin.password_hash)) {
     return res.status(401).json({ error: "Invalid admin credentials." });
   }
 
-  const token = jwt.sign({ sub: admin.id, role: "admin", username: admin.username }, JWT_SECRET, { expiresIn: TOKEN_TTL });
+  const token = jwt.sign(
+    { sub: admin.id, role: "admin", username: admin.username },
+    JWT_SECRET,
+    { expiresIn: TOKEN_TTL }
+  );
+
   res.json({ token, username: admin.username });
 });
 

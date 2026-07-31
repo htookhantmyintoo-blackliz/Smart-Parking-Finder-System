@@ -35,7 +35,13 @@ app.use((req, res, next) => {
   res.sendFile(path.join(FRONTEND_DIR, "index.html"));
 });
 
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error("Unhandled Error:", err.stack);
+  res.status(500).json({ error: "Internal server error." });
+});
+
 // Start server
 app.listen(PORT, () => {
-  console.log(`Smart Parking Finder backend running at http://localhost:${PORT}`);
+  console.log(`Smart Parking Finder backend running on port ${PORT}`);
 });

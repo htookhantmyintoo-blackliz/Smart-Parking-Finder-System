@@ -5,6 +5,7 @@
   let parkingAreas = [];
   let adminToken = localStorage.getItem("adminToken") || null;
 
+  // DOM Elements
   const adminLoginView = document.getElementById("adminLoginView");
   const adminControlView = document.getElementById("adminControlView");
   const adminLoginForm = document.getElementById("adminLoginForm");
@@ -16,6 +17,7 @@
   const adminLogoutBtn = document.getElementById("adminLogoutBtn");
   const adminOverviewBody = document.getElementById("adminOverviewBody");
 
+  // API Fetch Helper
   async function apiFetch(path, options = {}) {
     let res;
     try {
@@ -34,13 +36,19 @@
     return data;
   }
 
+  // Render Table Overview
   function renderOverview() {
     if (!adminOverviewBody) return;
+    if (parkingAreas.length === 0) {
+      adminOverviewBody.innerHTML = `<tr><td colspan="3">No car parks available.</td></tr>`;
+      return;
+    }
+
     adminOverviewBody.innerHTML = parkingAreas
       .map(
         (a) => `
         <tr>
-          <td>${a.name}</td>
+          <td><strong>${a.name}</strong></td>
           <td class="mono">${a.availableSpaces}</td>
           <td class="mono">${a.totalSpaces}</td>
         </tr>`
@@ -48,33 +56,59 @@
       .join("");
   }
 
+  // Populate Dropdown & Sync Inputs
   function populateAdminSelect() {
     if (!adminLotSelect) return;
-    adminLotSelect.innerHTML = parkingAreas.map((a) => `<option value="${a.id}">${a.name}</option>`).join("");
-    syncSpacesInputMax();
+    adminLotSelect.innerHTML = parkingAreas
+      .map((a) => `<option value="${a.id}">${a.name}</option>`)
+      .join("");
+    
+    syncSpacesInput();
   }
 
-  function syncSpacesInputMax() {
+  function syncSpacesInput() {
     if (!adminLotSelect || !adminSpacesInput) return;
-    const area = parkingAreas.find((a) => a.id === adminLotSelect.value);
-    if (area) adminSpacesInput.max = area.totalSpaces;
+    const selectedId = adminLotSelect.value;
+    const area = parkingAreas.find((a) => a.id === selectedId);
+    if (area) {
+      adminSpacesInput.value = area.availableSpaces;
+      adminSpacesInput.max = area.totalSpaces;
+    }
   }
 
+  // Load Parking Data
   async function loadParkingAreas() {
     parkingAreas = await apiFetch("/parking-areas");
     renderOverview();
     populateAdminSelect();
   }
 
+  // Toggle View State
   function showLoggedIn() {
     if (adminLoginView) adminLoginView.hidden = true;
     if (adminControlView) adminControlView.hidden = false;
   }
+
   function showLoggedOut() {
     if (adminControlView) adminControlView.hidden = true;
     if (adminLoginView) adminLoginView.hidden = false;
+    if (adminLoginForm) adminLoginForm.reset();
   }
 
+  // Display Feedback
+  function setFeedback(element, message, type = "error") {
+    if (!element) return;
+    element.dataset.tone = type;
+    element.textContent = message;
+
+    if (type === "success") {
+      setTimeout(() => {
+        element.textContent = "";
+      }, 3500);
+    }
+  }
+
+  // Admin Login Handler
   async function handleAdminLogin(e) {
     e.preventDefault();
     const username = document.getElementById("adminUsername").value.trim();
@@ -83,43 +117,59 @@
     try {
       const data = await apiFetch("/auth/admin/login", {
         method: "POST",
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, email: username, password }),
       });
+
       adminToken = data.token;
       localStorage.setItem("adminToken", adminToken);
-      adminLoginForm.reset();
-      adminAuthFeedback.textContent = "";
+      if (adminAuthFeedback) adminAuthFeedback.textContent = "";
+
       await loadParkingAreas();
       showLoggedIn();
     } catch (err) {
-      adminAuthFeedback.dataset.tone = "error";
-      adminAuthFeedback.textContent = err.message;
+      setFeedback(adminAuthFeedback, err.message, "error");
     }
   }
 
+  // Update Availability Handler
   async function handleAdminSubmit(e) {
     e.preventDefault();
     const id = adminLotSelect.value;
-    const availableSpaces = Number(adminSpacesInput.value);
+    const parsedSpaces = parseInt(adminSpacesInput.value, 10);
+
+    if (isNaN(parsedSpaces) || parsedSpaces < 0) {
+      setFeedback(adminFeedback, "Please enter a valid non-negative number.", "error");
+      return;
+    }
 
     try {
       const updated = await apiFetch(`/parking-areas/${id}`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${adminToken}` },
-        body: JSON.stringify({ availableSpaces }),
+        body: JSON.stringify({ availableSpaces: parsedSpaces }),
       });
 
+      // Update local array state
       const idx = parkingAreas.findIndex((a) => a.id === updated.id);
       if (idx !== -1) parkingAreas[idx] = updated;
 
-      adminFeedback.dataset.tone = "success";
-      adminFeedback.textContent = `Updated ${updated.name} to ${updated.availableSpaces} spaces.`;
+      setFeedback(
+        adminFeedback,
+        `Updated ${updated.name} to ${updated.availableSpaces} spaces.`,
+        "success"
+      );
+
       renderOverview();
-      adminForm.reset();
+      adminLotSelect.value = updated.id;
+      syncSpacesInput();
     } catch (err) {
-      adminFeedback.dataset.tone = "error";
-      adminFeedback.textContent = err.message;
-      if (err.message === "Invalid or expired token." || err.message === "Missing authentication token.") {
+      setFeedback(adminFeedback, err.message, "error");
+
+      if (
+        err.message.includes("token") ||
+        err.message.includes("unauthorized") ||
+        err.message.includes("Forbidden")
+      ) {
         adminToken = null;
         localStorage.removeItem("adminToken");
         showLoggedOut();
@@ -127,10 +177,12 @@
     }
   }
 
+  // Initialization
   async function init() {
     if (adminLoginForm) adminLoginForm.addEventListener("submit", handleAdminLogin);
     if (adminForm) adminForm.addEventListener("submit", handleAdminSubmit);
-    if (adminLotSelect) adminLotSelect.addEventListener("change", syncSpacesInputMax);
+    if (adminLotSelect) adminLotSelect.addEventListener("change", syncSpacesInput);
+
     if (adminLogoutBtn) {
       adminLogoutBtn.addEventListener("click", () => {
         adminToken = null;
@@ -149,6 +201,8 @@
         localStorage.removeItem("adminToken");
         showLoggedOut();
       }
+    } else {
+      showLoggedOut();
     }
   }
 

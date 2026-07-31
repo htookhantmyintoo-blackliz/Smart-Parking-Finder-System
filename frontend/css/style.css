@@ -313,6 +313,7 @@ a { color: inherit; }
 .feedback { font-size: 0.82rem; min-height: 1.1em; margin-top: 2px; }
 .feedback[data-tone="error"] { color: var(--full); }
 .feedback[data-tone="success"] { color: var(--available); }
+.feedback[data-tone="info"] { color: var(--almost-full, #b8860b); }
 
 .welcome-row { display: flex; justify-content: space-between; align-items: center; }
 .welcome-row p { font-size: 0.92rem; color: var(--ink-dim); }

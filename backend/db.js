@@ -6,7 +6,7 @@ const bcrypt = require("bcryptjs");
 const DB_PATH = path.join(__dirname, "parking.db");
 const db = new DatabaseSync(DB_PATH);
 
-// Create tables
+// Create tables with email support
 db.exec(`
   CREATE TABLE IF NOT EXISTS parking_areas (
     id TEXT PRIMARY KEY,
@@ -21,6 +21,7 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     username TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE,
     password_hash TEXT NOT NULL,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
   );
@@ -28,11 +29,24 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS admins (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE,
     password_hash TEXT NOT NULL
   );
 `);
 
-// Parking areas across Dublin 
+// Migration: Ensure 'email' column exists if 'parking.db' was created earlier
+try {
+  db.exec("ALTER TABLE drivers ADD COLUMN email TEXT UNIQUE");
+} catch (_) {
+  // Column already exists
+}
+try {
+  db.exec("ALTER TABLE admins ADD COLUMN email TEXT UNIQUE");
+} catch (_) {
+  // Column already exists
+}
+
+// Parking areas across Dublin
 const seedAreas = [
   // City centre
   { id: "lot-001", name: "Trinity Street Car Park", lat: 53.3438, lng: -6.2636, totalSpaces: 120, availableSpaces: 54 },
@@ -41,7 +55,7 @@ const seedAreas = [
   { id: "lot-004", name: "Drury Street Car Park", lat: 53.3417, lng: -6.2634, totalSpaces: 90, availableSpaces: 31 },
   { id: "lot-005", name: "Setanta Place Car Park", lat: 53.3406, lng: -6.2576, totalSpaces: 150, availableSpaces: 8 },
   { id: "lot-006", name: "Marlborough Street Car Park", lat: 53.3508, lng: -6.2603, totalSpaces: 110, availableSpaces: 76 },
-  //North, west, south, and coastal Dublin
+  // Further out — north, west, south, and coastal Dublin
   { id: "lot-007", name: "Dublin Airport Short-Term", lat: 53.4213, lng: -6.2701, totalSpaces: 400, availableSpaces: 145 },
   { id: "lot-008", name: "Blanchardstown Centre Car Park", lat: 53.3907, lng: -6.3855, totalSpaces: 250, availableSpaces: 60 },
   { id: "lot-009", name: "Dundrum Town Centre Car Park", lat: 53.2903, lng: -6.2470, totalSpaces: 300, availableSpaces: 0 },
@@ -50,7 +64,6 @@ const seedAreas = [
   { id: "lot-012", name: "Swords Pavilions Car Park", lat: 53.4597, lng: -6.2181, totalSpaces: 280, availableSpaces: 112 },
 ];
 
-// Insert any seed areas 
 const insertArea = db.prepare(`
   INSERT OR IGNORE INTO parking_areas (id, name, lat, lng, total_spaces, available_spaces)
   VALUES (?, ?, ?, ?, ?, ?)
@@ -68,16 +81,25 @@ if (insertedCount > 0) {
 const adminCount = db.prepare("SELECT COUNT(*) AS c FROM admins").get();
 if (adminCount.c === 0) {
   const hash = bcrypt.hashSync("admin123", 10);
-  db.prepare("INSERT INTO admins (username, password_hash) VALUES (?, ?)").run("admin", hash);
-  console.log("Seeded default admin account (admin / admin123).");
+  db.prepare("INSERT INTO admins (username, email, password_hash) VALUES (?, ?, ?)").run(
+    "admin",
+    "admin@gmail.com",
+    hash
+  );
+  console.log("Seeded default admin account (admin / admin@gmail.com / admin123).");
 }
 
 // Seed default driver
 const driverCount = db.prepare("SELECT COUNT(*) AS c FROM drivers").get();
 if (driverCount.c === 0) {
   const hash = bcrypt.hashSync("password123", 10);
-  db.prepare("INSERT INTO drivers (name, username, password_hash) VALUES (?, ?, ?)").run("hkmo", "driver", hash);
-  console.log("Seeded default driver account (driver / password123).");
+  db.prepare("INSERT INTO drivers (name, username, email, password_hash) VALUES (?, ?, ?, ?)").run(
+    "hkmo",
+    "driver",
+    "driver@gmail.com",
+    hash
+  );
+  console.log("Seeded default driver account (driver / driver@gmail.com / password123).");
 }
 
 module.exports = db;
