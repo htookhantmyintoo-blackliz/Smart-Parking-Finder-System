@@ -1,184 +1,80 @@
-(() => {
-  "use strict";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Parking Finder — Admin</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="admin-shell">
 
-  const API_BASE = "https://smart-parking-finder-system-tlzt.onrender.com/api";
-  let adminToken = localStorage.getItem("adminToken") || null;
-  let parkingAreas = [];
+  <header class="admin-topbar">
+    <div class="brand">
+      <span class="brand__sign" aria-hidden="true">P</span>
+      <span class="brand__name">Smart Parking Finder <span class="brand__admin-tag">Admin</span></span>
+    </div>
+    <a class="admin-topbar__back" href="index.html">← Back to site</a>
+  </header>
 
-  // DOM Elements
-  const adminLoginView = document.getElementById("adminLoginView");
-  const adminControlView = document.getElementById("adminControlView");
-  const adminLoginForm = document.getElementById("adminLoginForm");
-  const adminUsernameInput = document.getElementById("adminUsername");
-  const adminPasswordInput = document.getElementById("adminPassword");
-  const adminAuthFeedback = document.getElementById("adminAuthFeedback");
+  <main class="admin-main">
 
-  const adminLogoutBtn = document.getElementById("adminLogoutBtn");
-  const adminOverviewBody = document.getElementById("adminOverviewBody");
-  const adminForm = document.getElementById("adminForm");
-  const adminLotSelect = document.getElementById("adminLotSelect");
-  const adminSpacesInput = document.getElementById("adminSpacesInput");
-  const adminFeedback = document.getElementById("adminFeedback");
+    <div id="adminLoginView" class="admin-card">
+      <div class="admin-card__panel">
+        <h2>Admin sign in</h2>
+        <p class="admin-card__sub">Restricted to parking area staff.</p>
+        <form id="adminLoginForm" class="auth-form">
+          <div class="field">
+            <label for="adminUsername">Username or email</label>
+            <input id="adminUsername" type="text" required placeholder="Username or email" autocomplete="username" />
+          </div>
+          <div class="field">
+            <label for="adminPassword">Password</label>
+            <input id="adminPassword" type="password" required placeholder="••••••••" autocomplete="current-password" />
+          </div>
+          <button type="submit" class="btn btn--block">Sign In</button>
+        </form>
+        <p id="adminAuthFeedback" class="feedback" role="status"></p>
+      </div>
+    </div>
 
-  // API Helper
-  async function apiFetch(path, options = {}) {
-    const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
-    
-    if (adminToken) {
-      headers["Authorization"] = `Bearer ${adminToken}`;
-    }
+    <div id="adminControlView" class="admin-card admin-wide" hidden>
+      <div class="admin-card__panel">
+        <div class="admin-toprow">
+          <span class="admin-badge"> Authenticated</span>
+          <button id="adminLogoutBtn" class="btn btn--ghost btn--sm" type="button">Log out</button>
+        </div>
 
-    let res;
-    try {
-      res = await fetch(`${API_BASE}${path}`, { ...options, headers });
-    } catch (networkErr) {
-      throw new Error("Cannot connect to server. Please check your backend.");
-    }
+        <h2>Update space counts</h2>
+        <p class="admin-card__sub">Changes save immediately and appear on the live dashboard.</p>
 
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || "Request failed.");
-    return data;
-  }
+        <table class="mini-table" id="adminOverviewTable" aria-label="Current availability">
+          <thead>
+            <tr><th>Car park</th><th>Available</th><th>Total</th></tr>
+          </thead>
+          <tbody id="adminOverviewBody"></tbody>
+        </table>
 
-  // View Switches
-  function showLoggedInView() {
-    if (adminLoginView) adminLoginView.hidden = true;
-    if (adminControlView) adminControlView.hidden = false;
-    loadDashboard();
-  }
+        <form id="adminForm" class="auth-form">
+          <div class="field">
+            <label for="adminLotSelect">Car park</label>
+            <select id="adminLotSelect" required></select>
+          </div>
+          <div class="field">
+            <label for="adminSpacesInput">Available spaces</label>
+            <input id="adminSpacesInput" type="number" min="0" required />
+          </div>
+          <button type="submit" class="btn btn--block">Update Availability</button>
+        </form>
+        <p id="adminFeedback" class="feedback" role="status"></p>
+      </div>
+    </div>
 
-  function showLoggedOutView() {
-    if (adminLoginView) adminLoginView.hidden = false;
-    if (adminControlView) adminControlView.hidden = true;
-    if (adminLoginForm) adminLoginForm.reset();
-    if (adminAuthFeedback) adminAuthFeedback.textContent = "";
-  }
+  </main>
 
-  // Login Handler
-  async function handleLogin(e) {
-    e.preventDefault();
-    const identifier = adminUsernameInput.value.trim();
-    const password = adminPasswordInput.value;
+  <script src="js/data.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
 
-    try {
-      const data = await apiFetch("/auth/admin/login", {
-        method: "POST",
-        body: JSON.stringify({ username: identifier, email: identifier, password }),
-      });
-
-      adminToken = data.token;
-      localStorage.setItem("adminToken", adminToken);
-      if (adminAuthFeedback) adminAuthFeedback.textContent = "";
-      showLoggedInView();
-    } catch (err) {
-      if (adminAuthFeedback) {
-        adminAuthFeedback.dataset.tone = "error";
-        adminAuthFeedback.textContent = err.message;
-      }
-    }
-  }
-
-  // Logout Handler
-  function handleLogout() {
-    adminToken = null;
-    localStorage.removeItem("adminToken");
-    showLoggedOutView();
-  }
-
-  // Load Parking Dashboard
-  async function loadDashboard() {
-    try {
-      parkingAreas = await apiFetch("/parking-areas");
-      renderOverviewTable();
-      populateLotSelect();
-    } catch (err) {
-      if (adminFeedback) {
-        adminFeedback.dataset.tone = "error";
-        adminFeedback.textContent = "Failed to load parking areas.";
-      }
-    }
-  }
-
-  // Render Table & Options
-  function renderOverviewTable() {
-    if (!adminOverviewBody) return;
-    adminOverviewBody.innerHTML = parkingAreas
-      .map(
-        (area) => `
-        <tr>
-          <td><strong>${area.name}</strong></td>
-          <td><span class="mono">${area.availableSpaces}</span></td>
-          <td><span class="mono">${area.totalSpaces}</span></td>
-        </tr>`
-      )
-      .join("");
-  }
-
-  function populateLotSelect() {
-    if (!adminLotSelect) return;
-    adminLotSelect.innerHTML = parkingAreas
-      .map((area) => `<option value="${area.id}">${area.name}</option>`)
-      .join("");
-
-    if (parkingAreas.length > 0) {
-      updateSpacesInputValue();
-    }
-  }
-
-  function updateSpacesInputValue() {
-    const selectedId = adminLotSelect.value;
-    const selectedArea = parkingAreas.find((a) => a.id === selectedId);
-    if (selectedArea && adminSpacesInput) {
-      adminSpacesInput.value = selectedArea.availableSpaces;
-      adminSpacesInput.max = selectedArea.totalSpaces;
-    }
-  }
-
-  // Update Space Count Handler
-  async function handleUpdateAvailability(e) {
-    e.preventDefault();
-    const id = adminLotSelect.value;
-    const availableSpaces = parseInt(adminSpacesInput.value, 10);
-
-    try {
-      await apiFetch(`/parking-areas/${id}`, {
-        method: "PUT",
-        body: JSON.stringify({ availableSpaces }),
-      });
-
-      if (adminFeedback) {
-        adminFeedback.dataset.tone = "success";
-        adminFeedback.textContent = "Availability updated successfully!";
-      }
-
-      await loadDashboard();
-      adminLotSelect.value = id;
-      updateSpacesInputValue();
-
-      setTimeout(() => {
-        if (adminFeedback) adminFeedback.textContent = "";
-      }, 3000);
-    } catch (err) {
-      if (adminFeedback) {
-        adminFeedback.dataset.tone = "error";
-        adminFeedback.textContent = err.message;
-      }
-    }
-  }
-
-  // Event Listeners Initialization
-  function init() {
-    if (adminLoginForm) adminLoginForm.addEventListener("submit", handleLogin);
-    if (adminLogoutBtn) adminLogoutBtn.addEventListener("click", handleLogout);
-    if (adminForm) adminForm.addEventListener("submit", handleUpdateAvailability);
-    if (adminLotSelect) adminLotSelect.addEventListener("change", updateSpacesInputValue);
-
-    if (adminToken) {
-      showLoggedInView();
-    } else {
-      showLoggedOutView();
-    }
-  }
-
-  document.addEventListener("DOMContentLoaded", init);
-})();
