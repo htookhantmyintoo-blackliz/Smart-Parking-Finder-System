@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const API_BASE = "https://smart-parking-finder-system-tlzt.onrender.com/api";
+  // API_BASE comes from data.js, which is loaded before this file in admin.html.
   let parkingAreas = [];
   let adminToken = localStorage.getItem("adminToken") || null;
 

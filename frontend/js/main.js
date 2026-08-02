@@ -1,9 +1,8 @@
 (() => {
   "use strict";
 
-  const API_BASE = "https://smart-parking-finder-system-tlzt.onrender.com/api";
-  const FALLBACK_LOCATION = { lat: 53.349805, lng: -6.26031 }; // Dublin City Centre
-  const POLL_INTERVAL_MS = 15000; 
+  // API_BASE, FALLBACK_LOCATION, and POLL_INTERVAL_MS come from data.js,
+  // which is loaded before this file in index.html.
 
   let parkingAreas = [];
   let userLocation = null;
